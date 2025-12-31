@@ -1,100 +1,68 @@
-/**
- * Include the Geode headers.
- */
 #include <Geode/Geode.hpp>
+#include <Geode/modify/PlayLayer.hpp>
+#include <Geode/modify/PlayerObject.hpp>
+#include <Geode/modify/CCScheduler.hpp>
 
-/**
- * Brings cocos2d and all Geode namespaces to the current scope.
- */
 using namespace geode::prelude;
 
-/**
- * `$modify` lets you extend and modify GD's classes.
- * To hook a function in Geode, simply $modify the class
- * and write a new function definition with the signature of
- * the function you want to hook.
- *
- * Here we use the overloaded `$modify` macro to set our own class name,
- * so that we can use it for button callbacks.
- *
- * Notice the header being included, you *must* include the header for
- * the class you are modifying, or you will get a compile error.
- *
- * Another way you could do this is like this:
- *
- * struct MyMenuLayer : Modify<MyMenuLayer, MenuLayer> {};
- */
-#include <Geode/modify/MenuLayer.hpp>
-class $modify(MyMenuLayer, MenuLayer) {
-	/**
-	 * Typically classes in GD are initialized using the `init` function, (though not always!),
-	 * so here we use it to add our own button to the bottom menu.
-	 *
-	 * Note that for all hooks, your signature has to *match exactly*,
-	 * `void init()` would not place a hook!
-	*/
-	bool init() {
-		/**
-		 * We call the original init function so that the
-		 * original class is properly initialized.
-		 */
-		if (!MenuLayer::init()) {
-			return false;
-		}
+// --- HELPER FUNCTION ---
+// Checks if the level gives stars and if the user wants Safe Mode on.
+bool isSafeModeActive() {
+    auto pl = PlayLayer::get();
+    if (!pl || !pl->m_level) return false;
+    
+    bool masterSwitch = Mod::get()->getSettingValue<bool>("auto-safe-mode");
+    // If stars > 0 and safe mode is toggled on, return true (cheats will be blocked)
+    return (masterSwitch && pl->m_level->m_stars > 0);
+}
 
-		/**
-		 * You can use methods from the `geode::log` namespace to log messages to the console,
-		 * being useful for debugging and such. See this page for more info about logging:
-		 * https://docs.geode-sdk.org/tutorials/logging
-		*/
-		log::debug("Hello from my MenuLayer::init hook! This layer has {} children.", this->getChildrenCount());
+// --- NOCLIP FEATURE ---
+class $modify(PlayerObject) {
+    void destroyPlayer(PlayerObject* player, GameObject* object) {
+        bool noclipEnabled = Mod::get()->getSettingValue<bool>("noclip");
 
-		/**
-		 * See this page for more info about buttons
-		 * https://docs.geode-sdk.org/tutorials/buttons
-		*/
-		auto myButton = CCMenuItemSpriteExtra::create(
-			CCSprite::createWithSpriteFrameName("GJ_likeBtn_001.png"),
-			this,
-			/**
-			 * Here we use the name we set earlier for our modify class.
-			*/
-			menu_selector(MyMenuLayer::onMyButton)
-		);
+        // If noclip is on and Safe Mode is NOT blocking us, ignore the death
+        if (noclipEnabled && !isSafeModeActive()) {
+            return; 
+        }
 
-		/**
-		 * Here we access the `bottom-menu` node by its ID, and add our button to it.
-		 * Node IDs are a Geode feature, see this page for more info about it:
-		 * https://docs.geode-sdk.org/tutorials/nodetree
-		*/
-		auto menu = this->getChildByID("bottom-menu");
-		menu->addChild(myButton);
+        // Otherwise, die as normal
+        PlayerObject::destroyPlayer(player, object);
+    }
+};
 
-		/**
-		 * The `_spr` string literal operator just prefixes the string with
-		 * your mod id followed by a slash. This is good practice for setting your own node ids.
-		*/
-		myButton->setID("my-button"_spr);
+// --- SPEEDHACK & TPS BYPASS FEATURE ---
+class $modify(CCScheduler) {
+    void update(float dt) {
+        bool safeActive = isSafeModeActive();
+        
+        // Handle Speedhack
+        double speed = Mod::get()->getSettingValue<double>("speedhack");
+        float finalDt = dt;
 
-		/**
-		 * We update the layout of the menu to ensure that our button is properly placed.
-		 * This is yet another Geode feature, see this page for more info about it:
-		 * https://docs.geode-sdk.org/tutorials/layouts
-		*/
-		menu->updateLayout();
+        // Only apply speedhack if safe mode isn't active
+        if (!safeActive) {
+            finalDt *= static_cast<float>(speed);
+        }
 
-		/**
-		 * We return `true` to indicate that the class was properly initialized.
-		 */
-		return true;
-	}
+        // Handle TPS Bypass (Physics)
+        bool tpsEnabled = Mod::get()->getSettingValue<bool>("tps-bypass");
+        if (tpsEnabled && !safeActive) {
+            // Apply 240 ticks per second physics
+            CCScheduler::update(1.0f / 240.0f);
+        } else {
+            // Apply normal physics (with speedhack if active)
+            CCScheduler::update(finalDt);
+        }
+    }
+};
 
-	/**
-	 * This is the callback function for the button we created earlier.
-	 * The signature for button callbacks must always be the same,
-	 * return type `void` and taking a `CCObject*`.
-	*/
-	void onMyButton(CCObject*) {
-		FLAlertLayer::create("Geode", "Hello from my custom mod!", "OK")->show();
-	}
+// --- GUI LOGIC ---
+class $modify(PlayLayer) {
+    bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
+        if (!PlayLayer::init(level, useReplay, dontSave)) return false;
+        
+        // This makes sure the mod initializes correctly when you start a level
+        return true;
+    }
 };
