@@ -4,14 +4,8 @@
 	"name": "Zenith",
 	"developer": "swattkd",
 	"version": "1.0.0",
-	"description": "Premium mod menu for iOS.",
-	"repository": "https://github.com/swattkd/example-mod",
+	"description": "Zenith Mod",
 	"settings": {
-		"auto-safe-mode": {
-			"name": "Auto Safe Mode",
-			"type": "bool",
-			"default": true
-		},
 		"noclip": {
 			"name": "Noclip",
 			"type": "bool",
