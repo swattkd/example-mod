@@ -3,17 +3,11 @@
 
 using namespace geode::prelude;
 
-bool isSafeModeActive() {
-    auto pl = PlayLayer::get();
-    if (!pl || !pl->m_level) return false;
-    return (Mod::get()->getSettingValue<bool>("auto-safe-mode") && pl->m_level->m_stars > 0);
-}
-
 class $modify(PlayerObject) {
-    void destroyPlayer(PlayerObject* player, GameObject* object) {
-        if (Mod::get()->getSettingValue<bool>("noclip") && !isSafeModeActive()) {
+    void destroyPlayer(PlayerObject* p0, GameObject* p1) {
+        if (Mod::get()->getSettingValue<bool>("noclip")) {
             return;
         }
-        PlayerObject::destroyPlayer(player, object);
+        PlayerObject::destroyPlayer(p0, p1);
     }
 };
