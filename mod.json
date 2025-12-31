@@ -1,17 +1,37 @@
 {
-	"geode": "$GEODE_VERSION",
-	"gd": {
-		"win": "2.2074",
-		"android": "2.2074",
-		"mac": "2.2074",
-		"ios": "2.2074"
-	},
-	"id": "$MOD_ID",
-	"name": "$MOD_NAME",
-	"version": "$MOD_VERSION",
-	"developer": "$MOD_DEVELOPER",
-	"description": "$MOD_DESCRIPTION",
-	"dependencies": {
-		"geode.node-ids": ">=v1.20.0"
+	"geode": "3.0.0-beta.1",
+	"id": "yourname.zenith_menu",
+	"name": "Zenith",
+	"developer": "YourName",
+	"version": "1.0.0",
+	"description": "Premium mod menu with Auto-Safe Mode, Noclip, Speedhack, and TPS Bypass.",
+	"repository": "https://github.com/geode-sdk/example-mod",
+	"settings": {
+		"auto-safe-mode": {
+			"name": "Auto Safe Mode",
+			"description": "Disables cheats on rated levels to prevent leaderboard bans.",
+			"type": "bool",
+			"default": true
+		},
+		"noclip": {
+			"name": "Noclip",
+			"description": "Prevents death from obstacles.",
+			"type": "bool",
+			"default": false
+		},
+		"speedhack": {
+			"name": "Speedhack",
+			"description": "Adjust game speed (0.5 = slow, 1.0 = normal, 1.5 = fast).",
+			"type": "float",
+			"default": 1.0,
+			"min": 0.1,
+			"max": 2.0
+		},
+		"tps-bypass": {
+			"name": "TPS Bypass (240)",
+			"description": "Forces 240 ticks per second for smoother physics.",
+			"type": "bool",
+			"default": false
+		}
 	}
 }
